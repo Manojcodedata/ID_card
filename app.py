@@ -8,9 +8,12 @@ from helper import (
     load_image,
     detect_and_crop_face,
     img_aligner,
-    text_aligner,
+    generate_da_card,
+    generate_ds_card,
+    generate_fsd_card,
     write_face_log
 )
+from urls import *
 
 # ------------------------
 # Log File
@@ -41,13 +44,22 @@ def process_excel(uploaded_file, output_folder="generated_images"):
     log_file = "face_detection_log.txt"
     open(log_file, "w").close()
 
+    failed_images = []
 
     for i, link in enumerate(df.get("Latest Photo of the Student", [])):
         download_link = convert_to_direct(link)
         img = load_image(download_link)
 
         if img is None:
-            st.warning(f"Row {i}: image not loaded")
+            failed_images.append({
+                "Row Number": i + 2,
+                "Student Name": name,
+                "Enrollment ID": enroll_id,
+                "Original Image Link": link,
+                "Direct Image Link": download_link,
+                "Reason": "Image not loaded"
+            })
+            st.warning(f"Row {i + 2}: image not loaded")
             continue
 
         # face detection + smart crop
@@ -56,23 +68,33 @@ def process_excel(uploaded_file, output_folder="generated_images"):
 
 
         # Existing pipeline remains unchanged
-        id_card = img_aligner(face_img)
 
         name = str(df.get("Student Name", [""] * len(df))[i]).strip()
         enroll_id = str(df.get("Enrollment ID", ["unnamed"] * len(df))[i])
         father = df.get("Father/Mother Name", [""] * len(df))[i]
         course = df.get("Course Opted", [""] * len(df))[i]
         valid = df.get("Validity", [""] * len(df))[i]
+        branch = df.get("Branch", [""] * len(df))[i]
 
-        student_img = text_aligner(
-            id_card, name, enroll_id, father, course, valid
-        )
+        if course == 'Data Analytics':
+            imgx = img_aligner(face_img,da_template,da_tag)
+            id_img = generate_da_card(imgx,name,enroll_id,father,course,valid,branch,poppins_bold_path,poppins_semibold_path)
+        elif course == 'Data Science':
+            imgx = img_aligner(face_img,ds_template,ds_tag)
+            id_img = generate_ds_card(imgx,name,enroll_id,father,course,valid,branch,poppins_bold_path,poppins_semibold_path)
+        elif course == 'Full Stack Development':
+            imgx = img_aligner(face_img,fsd_template,fsd_tag)
+            id_img = generate_fsd_card(imgx,name,enroll_id,father,course,valid,branch,poppins_bold_path,poppins_semibold_path)
+
         write_face_log(enroll_id, face_found, log_file)
 
         save_path = os.path.join(output_folder, f"{enroll_id}.jpg")
-        cv2.imwrite(save_path, student_img)
+        cv2.imwrite(save_path, id_img)
+        failed_df = pd.DataFrame(failed_images)
+        failed_file = "failed_images.csv"
+        failed_df.to_csv(failed_file, index=False)
 
-    return output_folder
+    return output_folder,failed_file
 
 
 def zip_folder(folder_path, zip_path="generated_images.zip"):
@@ -99,18 +121,48 @@ uploaded_file = st.file_uploader(
     type=["csv", "xls", "xlsx"]
 )
 
+
+
+if "zip_path" not in st.session_state:
+    st.session_state.zip_path = None
+
+if "failed_file" not in st.session_state:
+    st.session_state.failed_file = None
+
 if uploaded_file:
     if st.button("Generate ID Cards"):
         with st.spinner("Generating..."):
-            output_folder = process_excel(uploaded_file)
+            output_folder, failed_file = process_excel(uploaded_file)
             zip_path = zip_folder(output_folder)
+
+        st.session_state.zip_path = zip_path
+        st.session_state.failed_file = failed_file
 
         st.success("ID cards generated successfully!")
 
-        with open(zip_path, "rb") as f:
+if st.session_state.zip_path and os.path.exists(st.session_state.zip_path):
+    with open(st.session_state.zip_path, "rb") as f:
+        st.download_button(
+            "Download ZIP",
+            f,
+            file_name="generated_images.zip",
+            mime="application/zip",
+            key="download_zip"
+        )
+
+if st.session_state.failed_file and os.path.exists(st.session_state.failed_file):
+    failed_df = pd.read_csv(st.session_state.failed_file)
+
+    if len(failed_df) > 0:
+        st.warning(f"{len(failed_df)} image(s) failed to load.")
+
+        with open(st.session_state.failed_file, "rb") as f:
             st.download_button(
-                "Download ZIP",
+                "Download Failed Images CSV",
                 f,
-                file_name="generated_images.zip",
-                mime="application/zip"
+                file_name="failed_images.csv",
+                mime="text/csv",
+                key="download_failed_csv"
             )
+    else:
+        st.info("All images loaded successfully.")

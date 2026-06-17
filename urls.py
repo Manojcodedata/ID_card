@@ -1,0 +1,8 @@
+da_template = 'DA_ID_Card.png'
+da_tag = 'DA_Tag.png'
+ds_template = 'DS_ID_Card.png'
+ds_tag = 'DS_Tag.png'
+fsd_template = 'FSD_ID_Card.png'
+fsd_tag = 'FSD_Tag.png'
+poppins_bold_path = 'Poppins-Bold.ttf'
+poppins_semibold_path = 'Poppins-SemiBold.ttf'
