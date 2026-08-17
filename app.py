@@ -90,9 +90,12 @@ def process_excel(uploaded_file, output_folder="generated_images"):
 
         save_path = os.path.join(output_folder, f"{enroll_id}.jpg")
         cv2.imwrite(save_path, id_img)
-        failed_df = pd.DataFrame(failed_images)
-        failed_file = "failed_images.csv"
-        failed_df.to_csv(failed_file, index=False)
+        if len(failed_images)>0:
+            failed_df = pd.DataFrame(failed_images)
+            failed_file = "failed_images.csv"
+            failed_df.to_csv(failed_file, index=False)
+        else:
+            failed_file = None
 
     return output_folder,failed_file
 
