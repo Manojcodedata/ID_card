@@ -50,6 +50,13 @@ def process_excel(uploaded_file, output_folder="generated_images"):
         download_link = convert_to_direct(link)
         img = load_image(download_link)
 
+        name = str(df.get("Student Name", [""] * len(df))[i]).strip()
+        enroll_id = str(df.get("Enrollment ID", ["unnamed"] * len(df))[i])
+        father = df.get("Father/Mother Name", [""] * len(df))[i]
+        course = df.get("Course Opted", [""] * len(df))[i]
+        valid = df.get("Validity", [""] * len(df))[i]
+        branch = df.get("Branch", [""] * len(df))[i]
+
         if img is None:
             failed_images.append({
                 "Row Number": i + 2,
@@ -69,12 +76,12 @@ def process_excel(uploaded_file, output_folder="generated_images"):
 
         # Existing pipeline remains unchanged
 
-        name = str(df.get("Student Name", [""] * len(df))[i]).strip()
-        enroll_id = str(df.get("Enrollment ID", ["unnamed"] * len(df))[i])
-        father = df.get("Father/Mother Name", [""] * len(df))[i]
-        course = df.get("Course Opted", [""] * len(df))[i]
-        valid = df.get("Validity", [""] * len(df))[i]
-        branch = df.get("Branch", [""] * len(df))[i]
+        #name = str(df.get("Student Name", [""] * len(df))[i]).strip()
+        #enroll_id = str(df.get("Enrollment ID", ["unnamed"] * len(df))[i])
+        #father = df.get("Father/Mother Name", [""] * len(df))[i]
+        #course = df.get("Course Opted", [""] * len(df))[i]
+        #valid = df.get("Validity", [""] * len(df))[i]
+        #branch = df.get("Branch", [""] * len(df))[i]
 
         if course == 'Data Analytics':
             imgx = img_aligner(face_img,da_template,da_tag)
